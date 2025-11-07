@@ -1,7 +1,7 @@
 // Bankinhg system in Dart using Four Pillars of OOPS
 
 abstract class BankAccount {
-  String _accountNumber;
+  int _accountNumber;
   String _accountHolderName;
   double _balance;
 
@@ -16,11 +16,11 @@ abstract class BankAccount {
     );
   }
 
-  String get getAccountNumber {
+  int get getAccountNumber {
     return _accountNumber;
   }
 
-  set setAccountNumber(String accountNumber) {
+  set setAccountNumber(int accountNumber) {
     this._accountNumber = accountNumber;
   }
 
@@ -217,9 +217,9 @@ class Bank {
 void main() {
   Bank bank = Bank();
 
-  var acc1 = SavingsAccount("230399", "Aryan", 5000);
-  var acc2 = CheckingAccount("230376", "Amit", 10000);
-  var acc3 = PremiumAccount("230366", "Ishan", 15000);
+  var acc1 = SavingsAccount(230399, "Aryan", 5000);
+  var acc2 = CheckingAccount(230376, "Amit", 10000);
+  var acc3 = PremiumAccount(230366, "Ishan", 15000);
 
   bank.createAccount(acc1);
   bank.createAccount(acc2);
