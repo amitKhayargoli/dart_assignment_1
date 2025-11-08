@@ -1,6 +1,26 @@
-// Banking System in Dart demonstrating OOP concepts
+// Custom Exception Classes
+class AccountNotFoundException implements Exception {
+  final String message;
+  AccountNotFoundException(this.message);
+  @override
+  String toString() => "AccountNotFoundException: $message";
+}
 
-// Abstract base class
+class InsufficientFundsException implements Exception {
+  final String message;
+  InsufficientFundsException(this.message);
+  @override
+  String toString() => "InsufficientFundsException: $message";
+}
+
+class MinimumBalanceException implements Exception {
+  final String message;
+  MinimumBalanceException(this.message);
+  @override
+  String toString() => "MinimumBalanceException: $message";
+}
+
+// Abstract BankAccount Class
 abstract class BankAccount {
   final int _accountNumber;
   final String _accountHolder;
@@ -17,12 +37,12 @@ abstract class BankAccount {
   void displayAccountDetails();
 }
 
-// Interface for interest-bearing accounts
+// Interface for accounts that earn interest
 abstract class InterestBearing {
   void calculateInterest();
 }
 
-// Savings Account
+// SavingsAccount Class
 class SavingsAccount extends BankAccount implements InterestBearing {
   final double _minBalance = 500.0;
   final double _interestRate = 0.02;
@@ -34,10 +54,7 @@ class SavingsAccount extends BankAccount implements InterestBearing {
 
   @override
   void deposit(double amount) {
-    if (amount <= 0) {
-      print("Deposit amount must be positive.");
-      return;
-    }
+    if (amount <= 0) throw ArgumentError("Deposit amount must be positive.");
     _balance += amount;
     print(
       "Deposited \$${amount} to ${_accountHolder}. New balance: \$${_balance}",
@@ -46,21 +63,14 @@ class SavingsAccount extends BankAccount implements InterestBearing {
 
   @override
   void withdraw(double amount) {
-    if (amount <= 0) {
-      print("Withdrawal amount must be positive.");
-      return;
-    }
+    if (amount <= 0) throw ArgumentError("Withdrawal amount must be positive.");
     if (_withdrawCount >= _withdrawLimit) {
-      print(
-        "Withdrawal limit of $_withdrawLimit reached for ${_accountHolder}.",
-      );
-      return;
+      throw Exception("Withdrawal limit of $_withdrawLimit reached.");
     }
     if (_balance - amount < _minBalance) {
-      print(
+      throw MinimumBalanceException(
         "Cannot withdraw \$${amount}. Must maintain at least \$$_minBalance.",
       );
-      return;
     }
     _balance -= amount;
     _withdrawCount++;
@@ -85,7 +95,7 @@ class SavingsAccount extends BankAccount implements InterestBearing {
   }
 }
 
-// Checking Account
+// CheckingAccount Class
 class CheckingAccount extends BankAccount {
   final double _overdraftLimit = 200.0;
   final double _overdraftFee = 35.0;
@@ -95,10 +105,7 @@ class CheckingAccount extends BankAccount {
 
   @override
   void deposit(double amount) {
-    if (amount <= 0) {
-      print("Deposit amount must be positive.");
-      return;
-    }
+    if (amount <= 0) throw ArgumentError("Deposit amount must be positive.");
     _balance += amount;
     print(
       "Deposited \$${amount} to ${_accountHolder}. New balance: \$${_balance}",
@@ -107,15 +114,11 @@ class CheckingAccount extends BankAccount {
 
   @override
   void withdraw(double amount) {
-    if (amount <= 0) {
-      print("Withdrawal amount must be positive.");
-      return;
-    }
+    if (amount <= 0) throw ArgumentError("Withdrawal amount must be positive.");
     if (_balance - amount < -_overdraftLimit) {
-      print(
-        "Overdraft limit of \$$_overdraftLimit exceeded. Withdrawal denied.",
+      throw InsufficientFundsException(
+        "Overdraft limit exceeded (\$$_overdraftLimit). Withdrawal denied.",
       );
-      return;
     }
     _balance -= amount;
     if (_balance < 0) {
@@ -139,7 +142,7 @@ class CheckingAccount extends BankAccount {
   }
 }
 
-// Premium Account
+// PremiumAccount Class
 class PremiumAccount extends BankAccount implements InterestBearing {
   final double _minBalance = 10000.0;
   final double _interestRate = 0.05;
@@ -149,10 +152,7 @@ class PremiumAccount extends BankAccount implements InterestBearing {
 
   @override
   void deposit(double amount) {
-    if (amount <= 0) {
-      print("Deposit amount must be positive.");
-      return;
-    }
+    if (amount <= 0) throw ArgumentError("Deposit amount must be positive.");
     _balance += amount;
     print(
       "Deposited \$${amount} to ${_accountHolder}. New balance: \$${_balance}",
@@ -161,15 +161,11 @@ class PremiumAccount extends BankAccount implements InterestBearing {
 
   @override
   void withdraw(double amount) {
-    if (amount <= 0) {
-      print("Withdrawal amount must be positive.");
-      return;
-    }
+    if (amount <= 0) throw ArgumentError("Withdrawal amount must be positive.");
     if (_balance - amount < _minBalance) {
-      print(
+      throw MinimumBalanceException(
         "Cannot withdraw \$${amount}. Must maintain minimum balance of \$$_minBalance.",
       );
-      return;
     }
     _balance -= amount;
     print(
@@ -202,37 +198,38 @@ class Bank {
     print("Account created successfully for ${account.getAccountHolder}.");
   }
 
-  BankAccount? findAccount(int accountNumber) {
-    for (var acc in _accounts) {
-      if (acc.getAccountNumber == accountNumber) {
-        return acc;
-      }
+  BankAccount findAccount(int accountNumber) {
+    try {
+      return _accounts.firstWhere(
+        (acc) => acc.getAccountNumber == accountNumber,
+        orElse: () => throw AccountNotFoundException(
+          "Account number $accountNumber not found.",
+        ),
+      );
+    } catch (e) {
+      throw AccountNotFoundException(
+        "Account number $accountNumber not found.",
+      );
     }
-    print("Account number $accountNumber not found.");
-    return null;
   }
 
   void deposit(int accountNumber, double amount) {
     var account = findAccount(accountNumber);
-    if (account != null) account.deposit(amount);
+    account.deposit(amount);
   }
 
   void withdraw(int accountNumber, double amount) {
     var account = findAccount(accountNumber);
-    if (account != null) account.withdraw(amount);
+    account.withdraw(amount);
   }
 
   void transfer(int fromAccNo, int toAccNo, double amount) {
     var from = findAccount(fromAccNo);
     var to = findAccount(toAccNo);
 
-    if (from == null || to == null) {
-      print("Transfer failed: One or both accounts not found.");
-      return;
-    }
-
     from.withdraw(amount);
     to.deposit(amount);
+
     print("Transferred \$${amount} from account $fromAccNo to $toAccNo");
   }
 
@@ -256,13 +253,19 @@ void main() {
   bank.createAccount(acc2);
   bank.createAccount(acc3);
 
-  bank.deposit(101, 500);
-  bank.withdraw(102, 100);
-  acc1.calculateInterest();
-  acc3.calculateInterest();
+  try {
+    bank.deposit(101, 500);
+    bank.withdraw(102, 100);
+    acc1.calculateInterest();
+    acc3.calculateInterest();
 
-  bank.transfer(101, 103, 200);
-  bank.withdraw(101, 2000); // Below minimum balance test
+    bank.transfer(101, 103, 200);
+
+    // Intentional error cases
+    bank.withdraw(101, 2000); // Below minimum balance
+  } catch (e) {
+    print("Error: $e");
+  }
 
   bank.displayAllAccounts();
 }
